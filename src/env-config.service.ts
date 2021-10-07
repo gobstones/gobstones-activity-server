@@ -8,4 +8,8 @@ export class EnvConfig {
   get gitHubToken(): string {
     return this.configService.get('GITHUB_TOKEN');
   }
+
+  get port(): number {
+    return this.configService.get('PORT') || 3000;
+  }
 }
