@@ -1,12 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, Param } from '@nestjs/common';
+import { GitHubService } from './github.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appService: GitHubService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Get('/repo/*')
+  async repo(@Param() params): Promise<any> {
+    const slug = params[0];
+    return this.appService.getContent(slug);
   }
 }
