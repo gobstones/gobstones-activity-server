@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { EnvConfig } from './env-config.service';
 
@@ -14,11 +14,18 @@ export class GitHubService {
 
   async getContent(slug: string, path = '.'): Promise<any> {
     const [owner, repo] = slug.split('/');
-    const { data } = await this.octokit.rest.repos.getContent({
-      owner,
-      repo,
-      path,
-    });
-    return data;
+    try {
+      const { data } = await this.octokit.rest.repos.getContent({
+        owner,
+        repo,
+        path,
+      });
+      return data;
+    } catch (error) {
+      if (error.name !== 'HttpError') {
+        throw error;
+      }
+      throw new HttpException(error.message, error.status);
+    }
   }
 }
