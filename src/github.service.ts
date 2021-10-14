@@ -3,6 +3,7 @@ import { Octokit } from '@octokit/rest';
 import { throttling } from '@octokit/plugin-throttling';
 import { EnvConfig, GitHubAuthCredentials } from './env-config.service';
 import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
+import { OctokitResponse } from '@octokit/types';
 
 function createOctokit(auth: GitHubAuthCredentials): Octokit {
   const Kit = Octokit.plugin(throttling);
@@ -41,12 +42,28 @@ export class GitHubService {
 
   async getContent(slug: string, path = '.') {
     const [owner, repo] = slug.split('/');
-    try {
-      const { data } = await this.octokit.repos.getContent({
+    return this.fetchDataFrom(
+      this.octokit.repos.getContent({
         owner,
         repo,
         path,
-      });
+      }),
+    );
+  }
+
+  async rateLimit() {
+    const {
+      resources: { core },
+    } = await this.fetchDataFrom(this.octokit.rateLimit.get());
+
+    return core;
+  }
+
+  private async fetchDataFrom<T extends OctokitResponse<R, any>, R>(
+    request: Promise<T>,
+  ): Promise<R> {
+    try {
+      const { data } = await request;
       return data;
     } catch (error) {
       if (error.name !== 'HttpError') {
@@ -54,10 +71,5 @@ export class GitHubService {
       }
       throw new HttpException(error.message, error.status);
     }
-  }
-
-  async rateLimit() {
-    const { data } = await this.octokit.rateLimit.get();
-    return data.rate;
   }
 }

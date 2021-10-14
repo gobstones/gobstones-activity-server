@@ -4,11 +4,11 @@ import { GitHubService } from './github.service';
 import { HttpException } from '@nestjs/common';
 
 describe('GitHubService', () => {
-  const getContentMock = jest.fn();
+  const getContentMock = jest.fn().mockResolvedValue({ data: [] });
 
   // TODO: couldn't find out how to provide a partial mock in a type-safe way
   const octokitMock = jest.fn().mockImplementation(() => ({
-    rest: { repos: { getContent: getContentMock } },
+    repos: { getContent: getContentMock },
   }));
 
   let service: GitHubService;
@@ -26,9 +26,18 @@ describe('GitHubService', () => {
   });
 
   describe('getContent', () => {
+    it('parses the given slug', async () => {
+      await service.getContent('gobstones/demo');
+      expect(getContentMock).toHaveBeenCalledWith({
+        owner: 'gobstones',
+        repo: 'demo',
+        path: '.',
+      });
+    });
+
     describe('when the repo and path exist', () => {
       it('returns the metadata', async () => {
-        getContentMock.mockResolvedValue({ data: [{ name: 'file.txt' }] });
+        getContentMock.mockResolvedValueOnce({ data: [{ name: 'file.txt' }] });
         expect(await service.getContent('gobstones/demo')).toEqual([
           { name: 'file.txt' },
         ]);
@@ -37,7 +46,7 @@ describe('GitHubService', () => {
 
     describe("when the repo or path don't exist", () => {
       it('throws a 404 HttpException', async () => {
-        getContentMock.mockRejectedValue({
+        getContentMock.mockRejectedValueOnce({
           name: 'HttpError',
           message: 'Not found',
           status: 404,
@@ -55,7 +64,7 @@ describe('GitHubService', () => {
           name: 'Unexpected',
           message: 'boom boom',
         };
-        getContentMock.mockRejectedValue(unknownError);
+        getContentMock.mockRejectedValueOnce(unknownError);
 
         await expect(service.getContent('gobstones/demo')).rejects.toEqual(
           unknownError,
