@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { EnvConfig } from './env-config.service';
 
