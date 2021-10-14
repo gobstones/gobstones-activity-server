@@ -37,7 +37,7 @@ export class GitHubService {
     this.octokit = createOctokit(envConfig.gitHubToken);
   }
 
-  async getContent(slug: string, path = '.'): Promise<any> {
+  async getContent(slug: string, path = '.') {
     const [owner, repo] = slug.split('/');
     try {
       const { data } = await this.octokit.rest.repos.getContent({
@@ -52,5 +52,10 @@ export class GitHubService {
       }
       throw new HttpException(error.message, error.status);
     }
+  }
+
+  async rateLimit() {
+    const { data } = await this.octokit.rateLimit.get();
+    return data.rate;
   }
 }

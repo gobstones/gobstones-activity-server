@@ -1,18 +1,26 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { GitHubService } from './github.service';
+import { promiseProps } from './utils/promise';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: GitHubService) {}
+  constructor(private readonly githubService: GitHubService) {}
 
   @Get('/repo/*')
   repo(@Param() params, @Query('path') path: string) {
     const slug = params[0];
-    return this.appService.getContent(slug, path);
+    return this.githubService.getContent(slug, path);
   }
 
   @Get('/ping')
   ping() {
     return { message: 'pong' };
+  }
+
+  @Get('/status')
+  status() {
+    return promiseProps({
+      gitHubRate: this.githubService.rateLimit(),
+    });
   }
 }
