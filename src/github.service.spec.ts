@@ -1,21 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EnvConfig } from './env-config.service';
 import { GitHubService } from './github.service';
-import { Octokit } from '@octokit/rest';
 import { HttpException } from '@nestjs/common';
-
-jest.mock('@octokit/rest');
 
 describe('GitHubService', () => {
   const getContentMock = jest.fn();
-  let service: GitHubService;
 
-  beforeAll(() => {
-    // TODO: the cast is used to allow partial mocking of the class
-    (Octokit as jest.Mocked<any>).mockImplementation(() => ({
-      rest: { repos: { getContent: getContentMock } },
-    }));
-  });
+  // TODO: couldn't find out how to provide a partial mock in a type-safe way
+  const octokitMock = jest.fn().mockImplementation(() => ({
+    rest: { repos: { getContent: getContentMock } },
+  }));
+
+  let service: GitHubService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,6 +22,7 @@ describe('GitHubService', () => {
       .compile();
 
     service = module.get<GitHubService>(GitHubService);
+    service.octokit = new octokitMock();
   });
 
   describe('getContent', () => {
