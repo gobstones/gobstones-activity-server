@@ -1,11 +1,13 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { throttling } from '@octokit/plugin-throttling';
-import { EnvConfig } from './env-config.service';
+import { EnvConfig, GitHubAuthCredentials } from './env-config.service';
+import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
 
-function createOctokit(auth) {
+function createOctokit(auth: GitHubAuthCredentials): Octokit {
   const Kit = Octokit.plugin(throttling);
   return new Kit({
+    authStrategy: createOAuthAppAuth,
     auth,
     throttle: {
       onRateLimit: (retryAfter, options, octokit) => {
@@ -33,14 +35,14 @@ function createOctokit(auth) {
 export class GitHubService {
   octokit: Octokit;
 
-  constructor(private envConfig: EnvConfig) {
-    this.octokit = createOctokit(envConfig.gitHubToken);
+  constructor(envConfig: EnvConfig) {
+    this.octokit = createOctokit(envConfig.gitHubAuth);
   }
 
   async getContent(slug: string, path = '.') {
     const [owner, repo] = slug.split('/');
     try {
-      const { data } = await this.octokit.rest.repos.getContent({
+      const { data } = await this.octokit.repos.getContent({
         owner,
         repo,
         path,

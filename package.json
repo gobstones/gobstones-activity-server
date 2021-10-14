@@ -26,6 +26,7 @@
     "@nestjs/core": "^8.0.0",
     "@nestjs/platform-express": "^8.0.0",
     "@octokit/auth-app": "^3.6.0",
+    "@octokit/auth-oauth-app": "^4.3.0",
     "@octokit/plugin-throttling": "^3.5.2",
     "@octokit/rest": "^18.11.4",
     "reflect-metadata": "^0.1.13",
