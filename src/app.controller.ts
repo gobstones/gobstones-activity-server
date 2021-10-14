@@ -6,8 +6,13 @@ export class AppController {
   constructor(private readonly appService: GitHubService) {}
 
   @Get('/repo/*')
-  async repo(@Param() params, @Query('path') path: string): Promise<any> {
+  repo(@Param() params, @Query('path') path: string) {
     const slug = params[0];
     return this.appService.getContent(slug, path);
+  }
+
+  @Get('/ping')
+  ping() {
+    return { message: 'pong' };
   }
 }
