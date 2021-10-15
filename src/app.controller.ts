@@ -20,7 +20,7 @@ export class AppController {
   @Get('/status')
   status() {
     return promiseProps({
-      gitHubRate: this.githubService.rateLimit(),
+      githubRate: this.githubService.rateLimit(),
       cacheUsage: Promise.resolve(this.githubService.cacheUsage()),
     });
   }
