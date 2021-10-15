@@ -4,7 +4,9 @@ import { GitHubService } from './github.service';
 import { HttpException } from '@nestjs/common';
 
 describe('GitHubService', () => {
-  const getContentMock = jest.fn().mockResolvedValue({ data: [] });
+  const getContentMock = jest
+    .fn()
+    .mockResolvedValue({ data: [], headers: { status: '200' } });
 
   // TODO: couldn't find out how to provide a partial mock in a type-safe way
   const octokitMock = jest.fn().mockImplementation(() => ({
@@ -23,21 +25,101 @@ describe('GitHubService', () => {
 
     service = module.get<GitHubService>(GitHubService);
     service.octokit = new octokitMock();
+    getContentMock.mockClear();
   });
 
   describe('getContent', () => {
     it('parses the given slug', async () => {
       await service.getContent('gobstones/demo');
-      expect(getContentMock).toHaveBeenCalledWith({
-        owner: 'gobstones',
-        repo: 'demo',
-        path: '.',
+      expect(getContentMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          owner: 'gobstones',
+          repo: 'demo',
+          path: '.',
+        }),
+      );
+    });
+
+    describe('cache', () => {
+      it('when item is new', async () => {
+        await service.getContent('gobstones/demo');
+
+        expect(getContentMock).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            headers: { 'If-None-Match': '1234' },
+          }),
+        );
+      });
+
+      describe('when item is cached', () => {
+        beforeEach(async () => {
+          getContentMock.mockResolvedValueOnce({
+            data: [{ name: 'file.txt' }],
+            headers: { etag: 'W/1234', status: '200' },
+          });
+          await service.getContent('gobstones/demo');
+        });
+
+        it('sends conditional request', async () => {
+          await service.getContent('gobstones/demo');
+          expect(getContentMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              headers: { 'If-None-Match': '1234' },
+            }),
+          );
+        });
+
+        describe("and data hasn't changed", () => {
+          it('returns it', async () => {
+            getContentMock.mockRejectedValueOnce({
+              name: 'HttpError',
+              status: 304,
+            });
+
+            const data = await service.getContent('gobstones/demo');
+            expect(data).toEqual([{ name: 'file.txt' }]);
+          });
+        });
+
+        describe('and data has changed', () => {
+          let data;
+
+          beforeEach(async () => {
+            getContentMock.mockResolvedValueOnce({
+              data: [{ name: 'file.txt' }, { name: 'anotherfile.txt' }],
+              headers: { etag: 'W/5678' },
+            });
+
+            data = await service.getContent('gobstones/demo');
+          });
+          it('returns the new data', async () => {
+            expect(data).toEqual([
+              { name: 'file.txt' },
+              { name: 'anotherfile.txt' },
+            ]);
+          });
+          it('replaces the cache', async () => {
+            getContentMock.mockRejectedValueOnce({
+              name: 'HttpError',
+              status: 304,
+            });
+
+            const newData = await service.getContent('gobstones/demo');
+            expect(newData).toEqual([
+              { name: 'file.txt' },
+              { name: 'anotherfile.txt' },
+            ]);
+          });
+        });
       });
     });
 
     describe('when the repo and path exist', () => {
       it('returns the metadata', async () => {
-        getContentMock.mockResolvedValueOnce({ data: [{ name: 'file.txt' }] });
+        getContentMock.mockResolvedValueOnce({
+          data: [{ name: 'file.txt' }],
+          headers: { status: '200' },
+        });
         expect(await service.getContent('gobstones/demo')).toEqual([
           { name: 'file.txt' },
         ]);
