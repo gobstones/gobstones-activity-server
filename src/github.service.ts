@@ -69,7 +69,7 @@ export class GitHubService {
     });
   }
 
-  async getContent(slug: string, path = '.') {
+  async repositoryContents(slug: string, path = '.') {
     const [owner, repo] = slug.split('/');
     const cacheKey = `getContent$${slug}$${path}`;
 

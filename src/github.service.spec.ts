@@ -28,9 +28,9 @@ describe('GitHubService', () => {
     getContentMock.mockClear();
   });
 
-  describe('getContent', () => {
+  describe('repositoryContents', () => {
     it('parses the given slug', async () => {
-      await service.getContent('gobstones/demo');
+      await service.repositoryContents('gobstones/demo');
       expect(getContentMock).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'gobstones',
@@ -42,7 +42,7 @@ describe('GitHubService', () => {
 
     describe('cache', () => {
       it('when item is new', async () => {
-        await service.getContent('gobstones/demo');
+        await service.repositoryContents('gobstones/demo');
 
         expect(getContentMock).not.toHaveBeenCalledWith(
           expect.objectContaining({
@@ -57,11 +57,11 @@ describe('GitHubService', () => {
             data: [{ name: 'file.txt' }],
             headers: { etag: 'W/1234', status: '200' },
           });
-          await service.getContent('gobstones/demo');
+          await service.repositoryContents('gobstones/demo');
         });
 
         it('sends conditional request', async () => {
-          await service.getContent('gobstones/demo');
+          await service.repositoryContents('gobstones/demo');
           expect(getContentMock).toHaveBeenCalledWith(
             expect.objectContaining({
               headers: { 'If-None-Match': '1234' },
@@ -91,7 +91,7 @@ describe('GitHubService', () => {
               status: 304,
             });
 
-            const data = await service.getContent('gobstones/demo');
+            const data = await service.repositoryContents('gobstones/demo');
             expect(data).toEqual([{ name: 'file.txt' }]);
           });
         });
@@ -105,7 +105,7 @@ describe('GitHubService', () => {
               headers: { etag: 'W/5678' },
             });
 
-            data = await service.getContent('gobstones/demo');
+            data = await service.repositoryContents('gobstones/demo');
           });
           it('returns the new data', async () => {
             expect(data).toEqual([
@@ -119,7 +119,7 @@ describe('GitHubService', () => {
               status: 304,
             });
 
-            const newData = await service.getContent('gobstones/demo');
+            const newData = await service.repositoryContents('gobstones/demo');
             expect(newData).toEqual([
               { name: 'file.txt' },
               { name: 'anotherfile.txt' },
@@ -135,7 +135,7 @@ describe('GitHubService', () => {
           data: [{ name: 'file.txt' }],
           headers: { status: '200' },
         });
-        expect(await service.getContent('gobstones/demo')).toEqual([
+        expect(await service.repositoryContents('gobstones/demo')).toEqual([
           { name: 'file.txt' },
         ]);
       });
@@ -149,9 +149,9 @@ describe('GitHubService', () => {
           status: 404,
         });
 
-        await expect(service.getContent('gobstones/demo')).rejects.toEqual(
-          new HttpException('Not found', 404),
-        );
+        await expect(
+          service.repositoryContents('gobstones/demo'),
+        ).rejects.toEqual(new HttpException('Not found', 404));
       });
     });
 
@@ -163,9 +163,9 @@ describe('GitHubService', () => {
         };
         getContentMock.mockRejectedValueOnce(unknownError);
 
-        await expect(service.getContent('gobstones/demo')).rejects.toEqual(
-          unknownError,
-        );
+        await expect(
+          service.repositoryContents('gobstones/demo'),
+        ).rejects.toEqual(unknownError);
       });
     });
   });

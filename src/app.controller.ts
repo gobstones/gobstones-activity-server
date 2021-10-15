@@ -9,7 +9,7 @@ export class AppController {
   @Get('/repo/*')
   repo(@Param() params, @Query('path') path: string) {
     const slug = params[0];
-    return this.githubService.getContent(slug, path);
+    return this.githubService.repositoryContents(slug, path);
   }
 
   @Get('/ping')
