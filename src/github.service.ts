@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { throttling } from '@octokit/plugin-throttling';
 import { EnvConfig, GitHubAuthCredentials } from './env-config.service';
@@ -61,6 +61,8 @@ export class GitHubService {
   octokit: Octokit;
   cache: LRUCache<string, CacheItem>;
 
+  private readonly logger = new Logger(GitHubService.name);
+
   constructor(envConfig: EnvConfig) {
     this.octokit = createOctokit(envConfig.gitHubAuth);
     this.cache = new LRUCache({
@@ -105,6 +107,7 @@ export class GitHubService {
 
   private makeCacheHeaders(key: string) {
     const item = this.cache.get(key);
+    this.logger.debug({ stage: 'make headers', key, etag: item?.etag });
     return item ? { 'If-None-Match': item.etag } : {};
   }
 
@@ -119,6 +122,7 @@ export class GitHubService {
   private addToCache(key: string) {
     return ({ headers, data }: { headers: ResponseHeaders; data: any }) => {
       if (headers.etag) {
+        this.logger.debug({ stage: 'add to cache', key, etag: headers.etag });
         this.cache.set(key, { etag: headers.etag.replace('W/', ''), data });
       }
       return data;
@@ -128,7 +132,9 @@ export class GitHubService {
   private fetchFromCache(key: string) {
     return (error) => {
       if (error.status === HttpStatus.NOT_MODIFIED) {
-        return this.cache.get(key).data;
+        const { etag, data } = this.cache.get(key);
+        this.logger.debug({ stage: 'return from cache', key, etag });
+        return data;
       }
 
       throw error;
