@@ -20,7 +20,7 @@ describe('GitHubService', () => {
       providers: [GitHubService, EnvConfig],
     })
       .overrideProvider(EnvConfig)
-      .useValue({ gitHubToken: 'abcdef123' })
+      .useValue({ gitHubToken: 'abcdef123', maxCacheSizeBytes: 5000 })
       .compile();
 
     service = module.get<GitHubService>(GitHubService);
@@ -67,6 +67,14 @@ describe('GitHubService', () => {
               headers: { 'If-None-Match': '1234' },
             }),
           );
+        });
+
+        it('reports cache usage', () => {
+          expect(service.cacheUsage()).toEqual({
+            limit: 5000,
+            used: 48,
+            remaining: 4952,
+          });
         });
 
         describe("and data hasn't changed", () => {

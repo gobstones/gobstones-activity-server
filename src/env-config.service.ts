@@ -17,6 +17,11 @@ export class EnvConfig {
     };
   }
 
+  get maxCacheSizeBytes(): number {
+    const maxMegabytes = this.configService.get('MAX_CACHE_SIZE_MB') || 200;
+    return maxMegabytes * 1024 * 1024;
+  }
+
   get port(): number {
     return this.configService.get('PORT') || 3000;
   }

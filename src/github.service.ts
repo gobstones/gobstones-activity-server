@@ -5,6 +5,7 @@ import { EnvConfig, GitHubAuthCredentials } from './env-config.service';
 import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
 import { OctokitResponse, ResponseHeaders } from '@octokit/types';
 import * as LRUCache from 'lru-cache';
+import sizeof = require('sizeof');
 
 function createOctokit(auth: GitHubAuthCredentials): Octokit {
   const Kit = Octokit.plugin(throttling);
@@ -40,6 +41,12 @@ interface CacheItem {
   data: any;
 }
 
+interface CacheUsage {
+  limit: number;
+  used: number;
+  remaining: number;
+}
+
 @Injectable()
 export class GitHubService {
   octokit: Octokit;
@@ -47,7 +54,10 @@ export class GitHubService {
 
   constructor(envConfig: EnvConfig) {
     this.octokit = createOctokit(envConfig.gitHubAuth);
-    this.cache = new LRUCache(50 * 1024);
+    this.cache = new LRUCache({
+      max: envConfig.maxCacheSizeBytes,
+      length: (value) => sizeof.sizeof(value),
+    });
   }
 
   async getContent(slug: string, path = '.') {
@@ -72,6 +82,14 @@ export class GitHubService {
     } = await this.fetchDataFrom(this.octokit.rateLimit.get());
 
     return core;
+  }
+
+  cacheUsage(): CacheUsage {
+    return {
+      limit: this.cache.max,
+      remaining: this.cache.max - this.cache.length,
+      used: this.cache.length,
+    };
   }
 
   private makeCacheHeaders(key: string) {
