@@ -71,7 +71,7 @@ export class GitHubService {
 
   async getContent(slug: string, path = '.') {
     const [owner, repo] = slug.split('/');
-    const cacheKey = `getContent-${slug}-${path}`;
+    const cacheKey = `getContent$${slug}$${path}`;
 
     return this.octokit.repos
       .getContent({
