@@ -71,9 +71,16 @@ describe('GitHubService', () => {
 
         it('reports cache usage', () => {
           expect(service.cacheUsage()).toEqual({
-            limit: 5000,
-            used: 48,
-            remaining: 4952,
+            raw: {
+              limit: 5000,
+              used: 48,
+              remaining: 4952,
+            },
+            human: {
+              limit: '5.00 KB',
+              used: '48.00 B',
+              remaining: '4.95 KB',
+            },
           });
         });
 

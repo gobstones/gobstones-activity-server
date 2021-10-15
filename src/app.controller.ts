@@ -21,6 +21,7 @@ export class AppController {
   status() {
     return promiseProps({
       gitHubRate: this.githubService.rateLimit(),
+      cacheUsage: Promise.resolve(this.githubService.cacheUsage()),
     });
   }
 }

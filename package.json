@@ -29,10 +29,12 @@
     "@octokit/plugin-throttling": "^3.5.2",
     "@octokit/rest": "^18.11.4",
     "lru-cache": "^6.0.0",
+    "ramda": "^0.27.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
-    "sizeof": "^1.0.0"
+    "sizeof": "^1.0.0",
+    "xbytes": "^1.7.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",

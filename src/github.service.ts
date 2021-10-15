@@ -6,6 +6,8 @@ import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
 import { OctokitResponse, ResponseHeaders } from '@octokit/types';
 import * as LRUCache from 'lru-cache';
 import sizeof = require('sizeof');
+import * as xbytes from 'xbytes';
+import { map } from 'ramda';
 
 function createOctokit(auth: GitHubAuthCredentials): Octokit {
   const Kit = Octokit.plugin(throttling);
@@ -42,9 +44,16 @@ interface CacheItem {
 }
 
 interface CacheUsage {
-  limit: number;
-  used: number;
-  remaining: number;
+  raw: {
+    limit: number;
+    used: number;
+    remaining: number;
+  };
+  human: {
+    limit: number;
+    used: number;
+    remaining: number;
+  };
 }
 
 @Injectable()
@@ -85,11 +94,13 @@ export class GitHubService {
   }
 
   cacheUsage(): CacheUsage {
-    return {
+    const raw = {
       limit: this.cache.max,
       remaining: this.cache.max - this.cache.length,
       used: this.cache.length,
     };
+
+    return { raw, human: map(xbytes, raw) };
   }
 
   private makeCacheHeaders(key: string) {
