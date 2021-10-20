@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EnvConfig } from './env-config.service';
 import { GitHubService } from './github.service';
 import { HttpException } from '@nestjs/common';
+import { DiscordLogger } from './discord-logger.service';
 
 describe('GitHubService', () => {
   const getContentMock = jest
@@ -17,10 +18,12 @@ describe('GitHubService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [GitHubService, EnvConfig],
+      providers: [GitHubService, EnvConfig, DiscordLogger],
     })
       .overrideProvider(EnvConfig)
       .useValue({ gitHubToken: 'abcdef123', maxCacheSizeBytes: 5000 })
+      .overrideProvider(DiscordLogger)
+      .useValue({})
       .compile();
 
     service = module.get<GitHubService>(GitHubService);

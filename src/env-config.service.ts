@@ -6,6 +6,11 @@ export interface GitHubAuthCredentials {
   clientSecret: string;
 }
 
+export interface DiscordWebhookCredentials {
+  id: string;
+  token: string;
+}
+
 @Injectable()
 export class EnvConfig {
   constructor(private configService: ConfigService) {}
@@ -24,5 +29,12 @@ export class EnvConfig {
 
   get port(): number {
     return this.configService.get('PORT') || 3000;
+  }
+
+  get discordWebhook(): DiscordWebhookCredentials {
+    return {
+      id: this.configService.get('DISCORD_WEBHOOK_ID'),
+      token: this.configService.get('DISCORD_WEBHOOK_TOKEN'),
+    };
   }
 }

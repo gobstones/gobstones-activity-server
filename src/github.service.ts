@@ -7,30 +7,51 @@ import { OctokitResponse, ResponseHeaders } from '@octokit/types';
 import * as LRUCache from 'lru-cache';
 import sizeof = require('sizeof');
 import * as xbytes from 'xbytes';
-import { map } from 'ramda';
+import { fromPairs, map, replace } from 'ramda';
+import { DiscordLogger } from './discord-logger.service';
 
-function createOctokit(auth: GitHubAuthCredentials): Octokit {
+// The options object has the params at the root,
+// so we find out their name from the URL and then extract them from the object.
+const extractParameters = (options) => {
+  const names = map(replace(/{|}/g, ''), options.url.match(/({\w+})/g));
+  return fromPairs(map((key) => [key, options[key]], names));
+};
+
+function createOctokit(
+  auth: GitHubAuthCredentials,
+  logger: DiscordLogger,
+): Octokit {
   const Kit = Octokit.plugin(throttling);
   return new Kit({
     authStrategy: createOAuthAppAuth,
     auth,
     throttle: {
       onRateLimit: (retryAfter, options, octokit) => {
-        octokit.log.warn(
-          `Request quota exhausted for request ${options.method} ${options.url}`,
-        );
+        const { method, url } = options;
+
+        logger.error('GitHub Service', 'Request quota exhausted!', {
+          method,
+          url,
+          ...extractParameters(options),
+        });
 
         if (options.request.retryCount === 0) {
-          // TODO: agregar logs por Discord
           // only retries once
-          octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+          logger.warn(
+            'GitHub Service',
+            `Will retry after ${retryAfter} seconds!`,
+            {
+              method,
+              url,
+            },
+          );
           return true;
         }
       },
       onAbuseLimit: (retryAfter, options, octokit) => {
-        // TODO: agregar logs por Discord
         // does not retry, only logs a warning
-        octokit.log.warn(
+        logger.error(
+          'GitHub Service',
           `Abuse detected for request ${options.method} ${options.url}`,
         );
       },
@@ -50,9 +71,9 @@ interface CacheUsage {
     remaining: number;
   };
   human: {
-    limit: number;
-    used: number;
-    remaining: number;
+    limit: string;
+    used: string;
+    remaining: string;
   };
 }
 
@@ -63,8 +84,8 @@ export class GitHubService {
 
   private readonly logger = new Logger(GitHubService.name);
 
-  constructor(envConfig: EnvConfig) {
-    this.octokit = createOctokit(envConfig.gitHubAuth);
+  constructor(envConfig: EnvConfig, discordLogger: DiscordLogger) {
+    this.octokit = createOctokit(envConfig.gitHubAuth, discordLogger);
     this.cache = new LRUCache({
       max: envConfig.maxCacheSizeBytes,
       length: (value) => sizeof.sizeof(value),
