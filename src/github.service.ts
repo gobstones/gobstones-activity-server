@@ -1,8 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { throttling } from '@octokit/plugin-throttling';
-import { EnvConfig, GitHubAuthCredentials } from './env-config.service';
-import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
+import { EnvConfig } from './env-config.service';
 import { OctokitResponse, ResponseHeaders } from '@octokit/types';
 import * as LRUCache from 'lru-cache';
 import sizeof = require('sizeof');
@@ -18,14 +17,9 @@ const extractParameters = (options) => {
   return fromPairs(map((key) => [key, options[key]], names));
 };
 
-function createOctokit(
-  // auth: GitHubAuthCredentials,
-  token: string,
-  logger: DiscordLogger,
-): Octokit {
+function createOctokit(token: string, logger: DiscordLogger): Octokit {
   const Kit = Octokit.plugin(throttling);
   return new Kit({
-    // authStrategy: createOAuthAppAuth,
     auth: token,
     throttle: {
       onRateLimit: (retryAfter, options, octokit) => {

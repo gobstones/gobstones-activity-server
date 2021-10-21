@@ -20,13 +20,6 @@ export interface GitHubRepo {
 export class EnvConfig {
   constructor(private configService: ConfigService) {}
 
-  get gitHubAuth(): GitHubAuthCredentials {
-    return {
-      clientId: this.configService.get('GITHUB_CLIENT_ID'),
-      clientSecret: this.configService.get('GITHUB_CLIENT_SECRET'),
-    };
-  }
-
   get githubBotToken(): string {
     return this.configService.get('GITHUB_BOT_TOKEN');
   }
