@@ -190,7 +190,8 @@ describe('GitHubService', () => {
         title: 'Something went wrong',
         mode: 'blocks',
         description: 'The board editor is not working for me :cry:',
-        browser: 'firefox',
+        browser: 'Firefox',
+        os: 'Linux 64-bit',
         url: 'https://gobstones.github.io/gobstones-jr/?course=gobstonescursos/curso-LPYSD2-virtual&github=gobstonescursos/curso-LPYSD2-virtual&path=Unidades/0.Repaso/2.Lucho%20enciende%20las%20luces,%20extendido',
         course: 'gobstonescursos/curso-LPYSD2-virtual',
         project: 'Lucho enciende las luces, extendido',
@@ -238,7 +239,8 @@ describe('GitHubService', () => {
             dedent`<details>
               <summary>:information_source: Información adicional</summary>
               
-              - :globe_with_meridians: **Navegador:** firefox
+              - :globe_with_meridians: **Navegador:** Firefox
+              - :minidisc: **Sistema operativo:** Linux 64-bit
               - :paperclip: **URL consultada:** https://gobstones.github.io/gobstones-jr/?course=gobstonescursos/curso-LPYSD2-virtual&github=gobstonescursos/curso-LPYSD2-virtual&path=Unidades/0.Repaso/2.Lucho%20enciende%20las%20luces,%20extendido
               - :closed_book: **Curso:** gobstonescursos/curso-LPYSD2-virtual
               - :pencil: **Proyecto:** Lucho enciende las luces, extendido
