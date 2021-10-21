@@ -119,7 +119,7 @@ export class GitHubService {
 
     try {
       const {
-        data: { url },
+        data: { html_url },
       } = await this.octokit.issues.create({
         owner,
         repo,
@@ -128,7 +128,7 @@ export class GitHubService {
         labels: [this.modeToLabel(report.mode)],
       });
 
-      return url;
+      return html_url;
     } catch (error) {
       this.forwardHttpError(error);
     }
