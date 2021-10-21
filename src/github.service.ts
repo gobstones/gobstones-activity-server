@@ -117,15 +117,21 @@ export class GitHubService {
   async createIssue(report: BugReport) {
     const { repo, owner } = this.envConfig.githubIssueTracker;
 
-    await this.octokit.issues
-      .create({
+    try {
+      const {
+        data: { url },
+      } = await this.octokit.issues.create({
         owner,
         repo,
         title: report.title,
         body: report.toMarkdownBody(),
         labels: [this.modeToLabel(report.mode)],
-      })
-      .catch(this.forwardHttpError);
+      });
+
+      return url;
+    } catch (error) {
+      this.forwardHttpError(error);
+    }
   }
 
   cacheUsage(): CacheUsage {

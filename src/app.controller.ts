@@ -14,8 +14,8 @@ export class AppController {
   }
 
   @Post('/issues')
-  createIssue(@Body() report: BugReport) {
-    return this.githubService.createIssue(new BugReport(report));
+  async createIssue(@Body() report: BugReport) {
+    return { url: await this.githubService.createIssue(new BugReport(report)) };
   }
 
   @Get('/ping')
