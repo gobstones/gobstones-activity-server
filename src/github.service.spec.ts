@@ -3,15 +3,22 @@ import { EnvConfig } from './env-config.service';
 import { GitHubService } from './github.service';
 import { HttpException } from '@nestjs/common';
 import { DiscordLogger } from './discord-logger.service';
+import { BugReport } from './models/bug_report.model';
+import dedent = require('dedent');
 
 describe('GitHubService', () => {
   const getContentMock = jest
     .fn()
     .mockResolvedValue({ data: [], headers: { status: '200' } });
 
+  const createIssueMock = jest
+    .fn()
+    .mockResolvedValue({ data: [], headers: { status: '201' } });
+
   // TODO: couldn't find out how to provide a partial mock in a type-safe way
   const octokitMock = jest.fn().mockImplementation(() => ({
     repos: { getContent: getContentMock },
+    issues: { create: createIssueMock },
   }));
 
   let service: GitHubService;
@@ -21,7 +28,11 @@ describe('GitHubService', () => {
       providers: [GitHubService, EnvConfig, DiscordLogger],
     })
       .overrideProvider(EnvConfig)
-      .useValue({ gitHubToken: 'abcdef123', maxCacheSizeBytes: 5000 })
+      .useValue({
+        gitHubToken: 'abcdef123',
+        maxCacheSizeBytes: 5000,
+        githubIssueTracker: { owner: 'pirulo', repo: 'bugs' },
+      } as Partial<EnvConfig>)
       .overrideProvider(DiscordLogger)
       .useValue({})
       .compile();
@@ -170,6 +181,71 @@ describe('GitHubService', () => {
           service.repositoryContents('gobstones/demo'),
         ).rejects.toEqual(unknownError);
       });
+    });
+  });
+
+  describe('createIssue', () => {
+    beforeEach(async () => {
+      const report = new BugReport({
+        title: 'Something went wrong',
+        mode: 'blocks',
+        description: 'The board editor is not working for me :cry:',
+        browser: 'firefox',
+        url: 'https://gobstones.github.io/gobstones-jr/?course=gobstonescursos/curso-LPYSD2-virtual&github=gobstonescursos/curso-LPYSD2-virtual&path=Unidades/0.Repaso/2.Lucho%20enciende%20las%20luces,%20extendido',
+        course: 'gobstonescursos/curso-LPYSD2-virtual',
+        project: 'Lucho enciende las luces, extendido',
+        email: 'student@pm.me',
+      });
+      await service.createIssue(report);
+    });
+
+    it('copies title from the report', () => {
+      expect(createIssueMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Something went wrong' }),
+      );
+    });
+
+    it('assigns labels according to the mode', () => {
+      expect(createIssueMock).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['junior'] }),
+      );
+    });
+
+    it('includes description in the body', () => {
+      expect(createIssueMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining(
+            'The board editor is not working for me :cry:',
+          ),
+        }),
+      );
+    });
+
+    it('includes reporter email in the body', () => {
+      expect(createIssueMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining(
+            '_Defecto reportado por [student@pm.me](mailto:student@pm.me)._',
+          ),
+        }),
+      );
+    });
+
+    it('includes context data in the body', () => {
+      expect(createIssueMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining(
+            dedent`<details>
+              <summary>:information_source: Información adicional</summary>
+              
+              - :globe_with_meridians: **Navegador:** firefox
+              - :paperclip: **URL consultada:** https://gobstones.github.io/gobstones-jr/?course=gobstonescursos/curso-LPYSD2-virtual&github=gobstonescursos/curso-LPYSD2-virtual&path=Unidades/0.Repaso/2.Lucho%20enciende%20las%20luces,%20extendido
+              - :closed_book: **Curso:** gobstonescursos/curso-LPYSD2-virtual
+              - :pencil: **Proyecto:** Lucho enciende las luces, extendido
+            </details>`,
+          ),
+        }),
+      );
     });
   });
 });

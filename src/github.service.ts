@@ -9,6 +9,7 @@ import sizeof = require('sizeof');
 import * as xbytes from 'xbytes';
 import { fromPairs, map, replace } from 'ramda';
 import { DiscordLogger } from './discord-logger.service';
+import { BugReport } from './models/bug_report.model';
 
 // The options object has the params at the root,
 // so we find out their name from the URL and then extract them from the object.
@@ -18,13 +19,14 @@ const extractParameters = (options) => {
 };
 
 function createOctokit(
-  auth: GitHubAuthCredentials,
+  // auth: GitHubAuthCredentials,
+  token: string,
   logger: DiscordLogger,
 ): Octokit {
   const Kit = Octokit.plugin(throttling);
   return new Kit({
-    authStrategy: createOAuthAppAuth,
-    auth,
+    // authStrategy: createOAuthAppAuth,
+    auth: token,
     throttle: {
       onRateLimit: (retryAfter, options, octokit) => {
         const { method, url } = options;
@@ -80,12 +82,14 @@ interface CacheUsage {
 @Injectable()
 export class GitHubService {
   octokit: Octokit;
-  cache: LRUCache<string, CacheItem>;
 
+  private readonly cache: LRUCache<string, CacheItem>;
+  private readonly envConfig: EnvConfig;
   private readonly logger = new Logger(GitHubService.name);
 
   constructor(envConfig: EnvConfig, discordLogger: DiscordLogger) {
-    this.octokit = createOctokit(envConfig.gitHubAuth, discordLogger);
+    this.envConfig = envConfig;
+    this.octokit = createOctokit(envConfig.githubBotToken, discordLogger);
     this.cache = new LRUCache({
       max: envConfig.maxCacheSizeBytes,
       length: (value) => sizeof.sizeof(value),
@@ -116,6 +120,20 @@ export class GitHubService {
     return core;
   }
 
+  async createIssue(report: BugReport) {
+    const { repo, owner } = this.envConfig.githubIssueTracker;
+
+    await this.octokit.issues
+      .create({
+        owner,
+        repo,
+        title: report.title,
+        body: report.toMarkdownBody(),
+        labels: [this.modeToLabel(report.mode)],
+      })
+      .catch(this.forwardHttpError);
+  }
+
   cacheUsage(): CacheUsage {
     const raw = {
       limit: this.cache.max,
@@ -124,6 +142,17 @@ export class GitHubService {
     };
 
     return { raw, human: map(xbytes, raw) };
+  }
+
+  private modeToLabel(mode: string) {
+    switch (mode) {
+      case 'blocks':
+        return 'junior';
+      case 'code':
+        return 'senior';
+      default:
+        return mode;
+    }
   }
 
   private makeCacheHeaders(key: string) {

@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { BugReport } from './models/bug_report.model';
 import { GitHubService } from './github.service';
 import { promiseProps } from './utils/promise';
 
@@ -10,6 +11,11 @@ export class AppController {
   repo(@Param() params, @Query('path') path: string) {
     const slug = params[0];
     return this.githubService.repositoryContents(slug, path);
+  }
+
+  @Post('/issues')
+  createIssue(@Body() report: BugReport) {
+    return this.githubService.createIssue(new BugReport(report));
   }
 
   @Get('/ping')

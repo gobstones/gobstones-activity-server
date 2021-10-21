@@ -11,6 +11,11 @@ export interface DiscordWebhookCredentials {
   token: string;
 }
 
+export interface GitHubRepo {
+  owner: string;
+  repo: string;
+}
+
 @Injectable()
 export class EnvConfig {
   constructor(private configService: ConfigService) {}
@@ -19,6 +24,17 @@ export class EnvConfig {
     return {
       clientId: this.configService.get('GITHUB_CLIENT_ID'),
       clientSecret: this.configService.get('GITHUB_CLIENT_SECRET'),
+    };
+  }
+
+  get githubBotToken(): string {
+    return this.configService.get('GITHUB_BOT_TOKEN');
+  }
+
+  get githubIssueTracker(): GitHubRepo {
+    return {
+      owner: this.configService.get('GITHUB_ISSUES_OWNER') || 'gobstones',
+      repo: this.configService.get('GITHUB_ISSUES_REPO') || 'gobstones-issues',
     };
   }
 
